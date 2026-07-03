@@ -10,16 +10,33 @@ const NotificationPrefSchema = new Schema(
   },
   { _id: false }
 );
-
-const AllocationSchema = new Schema(
+const FamilySchema = new Schema(
   {
-    mainPurposeCategory: { type: String, default: "" },
-    subcategory: { type: String, default: "" },
-    tempAmount: { type: String, default: "" },
+    dateOfBirth: { type: Date },
+    email: { type: String, default: "" },
+    language: { type: String, default: "" },
+    name: { type: String, default: "" },
+    occupation: { type: String, default: "" },
+    phoneNo: { type: String, default: "" },
+    relationType: {
+      type: String,
+      enum: ["spouse", "child", "relative"], // matches your dropdown options
+      default: "spouse",
+    },
   },
-  { _id: false }
+  { _id: false },
 );
-
+const AddressSchema = new Schema(
+  {
+    country: { type: String, default: "" },
+    district: { type: String, default: "" },
+    house: { type: String, default: "" },
+    pincode: { type: String, default: "" },
+    state: { type: String, default: "" },
+    village: { type: String, default: "" },
+  },
+  { _id: false }, // no separate _id for each address sub-doc
+);
 const ChildSchema = new Schema(
   {
     _id: { type: String },
@@ -29,10 +46,45 @@ const ChildSchema = new Schema(
   },
   { _id: false }
 );
+const ContactsSchema = new Schema(
+  {
+    // dynamic keys like "address-1", "address-2", "address-3"...
+    address: {
+      type: Map,
+      of: AddressSchema,
+      default: {},
+    },
+    email: { type: String, default: "" },
+    phoneNo: { type: String, default: "" },
+    secondaryEmail: { type: String, default: "" },
+    secondaryNo: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
+const AllocationSchema = new Schema(
+  {
+    mainPurposeCategory: { type: String, default: "" },
+    subcategory: { type: String, default: "" },
+    tempAmount: { type: String, default: "" },
+      sponsorshipAllocationInput: {
+        sponsoredTo: { type: String },
+        gender: { type: String },
+        period: { type: String },
+        startDate: { type: Date },
+        endDate: { type: Date },
+        children: [ChildSchema],
+        transactionId: { type: String },
+      },
+  },
+  { _id: false }
+);
+
+
 
 const SupporterSchema = new Schema(
   {
-    type: { type: String, default: "Individual" }, // "Individual" | "Organisation"
+    type: { type: String, default: "Individual" },
     title: { type: String },
     name: { type: String, required: true },
     gender: { type: String },
@@ -51,14 +103,16 @@ const SupporterSchema = new Schema(
     ],
 
     // notification preferences
-    birthdayWishes: NotificationPrefSchema,
-    generalCommunication: NotificationPrefSchema,
-    receiptAcknowledgement: NotificationPrefSchema,
-    weddingWishes: NotificationPrefSchema,
+    // generalCommunication: NotificationPrefSchema,
+    // receiptAcknowledgement: NotificationPrefSchema,
     acknowledgement: {
+      weddingWishes: NotificationPrefSchema,
+      birthdayWishes: NotificationPrefSchema,
       generalCommunication: NotificationPrefSchema,
       receiptAcknowledgement: NotificationPrefSchema,
     },
+    contacts: { type: ContactsSchema, default: {} },
+    family: { type: FamilySchema, default: {} },
 
     // transaction details — all in same document
     transaction: {
@@ -75,15 +129,7 @@ const SupporterSchema = new Schema(
       allocation: [AllocationSchema],
       allocationInput: AllocationSchema,
 
-      sponsorshipAllocationInput: {
-        sponsoredTo: { type: String },
-        gender: { type: String },
-        period: { type: String },
-        startDate: { type: Date },
-        endDate: { type: Date },
-        children: [ChildSchema],
-        transactionId: { type: String },
-      },
+    
     },
   },
   { timestamps: true }
