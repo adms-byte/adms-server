@@ -21,6 +21,38 @@ supportersRouter.post('/', async (req, res) => {
  
 
 });
+supportersRouter.get('/', async (req, res) => {
+   log(req.body, 'req.body');
+    try {
+    const supporter = await Supporters.find();
+     sendStandardResponse<any>(res, 'OK', {
+      data: supporter,
+      message: 'Successfully retrieved supporters',
+    });
+  } catch (err) {
+    log(err);
+  }
+    // const result = await Supporters.create(req.body);
+   
+ 
+
+});
+supportersRouter.get('/:id', async (req, res) => {
+   log(req.body, 'req.body');
+    try {
+    const supporter = await Supporters.findById(req.params.id);
+     sendStandardResponse<any>(res, 'OK', {
+      data: supporter,
+      message: 'Successfully retrieved supporters',
+    });
+  } catch (err) {
+    log(err);
+  }
+    // const result = await Supporters.create(req.body);
+   
+ 
+
+});
 
 
 
