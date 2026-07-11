@@ -80,7 +80,20 @@ const AllocationSchema = new Schema(
   { _id: false }
 );
 
-
+const SubscriptionSchema = new Schema(
+  {
+    title: { type: String, default: "" },
+    description: { type: String, default: "" },
+    startDate: { type: Date },
+    endDate: { type: Date },
+    options: {
+      type: String,
+      enum: ["repeat", "one-time"], // adjust to match your actual dropdown values
+      default: "one-time",
+    },
+  },
+  { _id: false }
+);
 
 const SupporterSchema = new Schema(
   {
@@ -112,7 +125,7 @@ const SupporterSchema = new Schema(
       receiptAcknowledgement: NotificationPrefSchema,
     },
     contacts: { type: ContactsSchema, default: {} },
-    family: { type: FamilySchema, default: {} },
+    family: { type: [FamilySchema], default: [ ] },
 
     // transaction details — all in same document
     transaction: {
@@ -129,7 +142,7 @@ const SupporterSchema = new Schema(
       allocation: [AllocationSchema],
       allocationInput: AllocationSchema,
 
-    
+      subscription: SubscriptionSchema,
     },
   },
   { timestamps: true }
