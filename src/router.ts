@@ -1,10 +1,12 @@
 import { Router } from "express";
 import supporters from "./modules/supporters";
+import childrens from "./modules/childrens";
 
 
 const router = Router();
 
 router.use('/supporters', supporters.router);
+router.use('/childrens', childrens.router);
 // router.use('/hr', HR.router);
 // router.use('/divisions', division.router);
 // router.use('/workers', workers.router);
