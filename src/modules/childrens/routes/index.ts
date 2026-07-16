@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { log } from "console";
 import { sendStandardResponse } from "../../../extras/helpers";
+import Childrens from "../models/Childrens";
 
 const childrensRouter = Router();
 
 childrensRouter.post('/', async (req, res) => {
    log(req.body, 'req.body');
     try {
-    const childrens = await ChildSchema.create(req.body);
+    const childrens = await Childrens.create(req.body);
      sendStandardResponse<any>(res, 'OK', {
       data: childrens,
       message: 'Successfully created childrens',
@@ -20,22 +21,22 @@ childrensRouter.post('/', async (req, res) => {
  
 
 });
-// // childrensRouter.get('/', async (req, res) => {
-// //    log(req.body, 'req.body');
-// //     try {
-// //     const supporter = await Supporters.find();
-// //      sendStandardResponse<any>(res, 'OK', {
-// //       data: supporter,
-// //       message: 'Successfully retrieved supporters',
-// //     });
-// //   } catch (err) {
-// //     log(err);
-// //   }
-// //     // const result = await Supporters.create(req.body);
+childrensRouter.get('/', async (req, res) => {
+   log(req.body, 'req.body');
+    try {
+    const supporter = await Childrens.find();
+     sendStandardResponse<any>(res, 'OK', {
+      data: supporter,
+      message: 'Successfully retrieved Childrens',
+    });
+  } catch (err) {
+    log(err);
+  }
+    // const result = await Supporters.create(req.body);
    
  
 
-// // });
+});
 // // childrensRouter.get('/:id', async (req, res) => {
 // //    log(req.body, 'req.body');
 // //     try {

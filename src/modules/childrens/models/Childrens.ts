@@ -4,17 +4,36 @@ const { Schema } = mongoose;
 /**
  * Schema for: IET WD-SRD Format Renewal Application / Annual Report - Missionary Child
  * Rev: 01-05-2014
+ *
+ * NOTE: All fields are optional by design. A document can be created/saved
+ * with as little as a single field (e.g. { divisionName: "X" }), and Mongoose
+ * will lazily create the "Childrens" collection in MongoDB on the first
+ * successful save/insert — no field needs to be "required" for that to happen.
+ *
+ * Forms often submit "" for unanswered Boolean (Yes/No) and dropdown/enum
+ * fields. Mongoose can't cast "" to Boolean and "" isn't a valid enum value,
+ * which throws a ValidationError. These helpers normalize "" / null to
+ * undefined so the field is simply left unset instead of failing.
  */
+const emptyToUndefined = (v) => (v === '' || v === null ? undefined : v);
+
+const optionalBoolean = () => ({ type: Boolean, set: emptyToUndefined });
+
+const optionalEnum = (values) => ({
+  type: String,
+  enum: values,
+  set: emptyToUndefined,
+});
 const ChildSchema = new Schema(
   {
     divisionName: { type: String, trim: true }, // "Name of Division"
 
     // ---------------- Details of the Child ----------------
     childDetails: {
-      name: { type: String, required: true, trim: true },
+      name: { type: String, trim: true },
       childCode: { type: String, trim: true },
       age: { type: Number, min: 0 },
-      gender: { type: String, enum: ['Male', 'Female'] },
+      gender: optionalEnum(['Male', 'Female']),
       motherTongue: { type: String, trim: true },
       otherLanguagesKnown: { type: String, trim: true },
       fatherName: { type: String, trim: true },
@@ -39,30 +58,27 @@ const ChildSchema = new Schema(
 
     // ---------------- Details of the New Academic Year ----------------
     newAcademicYear: {
-      passedFinalExam: { type: Boolean }, // Yes/No
+      passedFinalExam: optionalBoolean(), // Yes/No
       percentageOrGrade: { type: String, trim: true },
       promotedToClass: { type: String, trim: true },
-      studyingInSameSchool: { type: Boolean }, // Yes/No
+      studyingInSameSchool: optionalBoolean(), // Yes/No
       reasonIfNotSameSchool: { type: String, trim: true },
       newSchoolName: { type: String, trim: true },
       place: { type: String, trim: true },
       district: { type: String, trim: true },
       state: { type: String, trim: true },
-      studyingInBoardingSchool: { type: Boolean }, // Yes/No
+      studyingInBoardingSchool: optionalBoolean(), // Yes/No
       boardingSchoolDetails: { type: String, trim: true },
     },
 
     // ---------------- Details of Studies and Other Activities ----------------
     studiesAndActivities: {
-      schoolPerformance: {
-        type: String,
-        enum: [
-          'Excellent - Above average in most subjects',
-          'Good - Performing well in most subjects',
-          'Average - Needs improvement in some areas',
-          'Below Average - Struggling with several subjects',
-        ],
-      },
+      schoolPerformance: optionalEnum([
+        'Excellent - Above average in most subjects',
+        'Good - Performing well in most subjects',
+        'Average - Needs improvement in some areas',
+        'Below Average - Struggling with several subjects',
+      ]),
       favouriteSubjects: {
         type: [
           {
@@ -83,7 +99,7 @@ const ChildSchema = new Schema(
         default: [],
       },
       favouriteSubjectOther: { type: String, trim: true }, // free text for "Other"
-      receivedAcademicAward: { type: Boolean },
+      receivedAcademicAward: optionalBoolean(),
       academicAwardDetails: { type: String, trim: true },
       extracurricularActivities: {
         type: [
@@ -110,18 +126,18 @@ const ChildSchema = new Schema(
     spiritualActivities: {
       churchName: { type: String, trim: true },
       churchPlace: { type: String, trim: true },
-      attendsSundaySchool: { type: Boolean },
+      attendsSundaySchool: optionalBoolean(),
       sundaySchoolClass: { type: String, trim: true },
-      isChoirMember: { type: Boolean },
-      playsMusicInstrument: { type: Boolean },
+      isChoirMember: optionalBoolean(),
+      playsMusicInstrument: optionalBoolean(),
       instrumentNames: { type: String, trim: true },
     },
 
     // ---------------- Details of Child's Health ----------------
     health: {
-      hadHealthProblemLastYear: { type: Boolean },
+      hadHealthProblemLastYear: optionalBoolean(),
       healthProblemDetails: { type: String, trim: true },
-      hasDisability: { type: Boolean }, // physical/mental disability
+      hasDisability: optionalBoolean(), // physical/mental disability
       disabilityDetails: { type: String, trim: true },
     },
 
@@ -174,8 +190,8 @@ const ChildSchema = new Schema(
 
     // ---------------- For IET HQ Office Use Only ----------------
     hqOfficeUse: {
-      photographReceived: { type: Boolean },
-      reportCardOrMarkSheetReceived: { type: Boolean },
+      photographReceived: optionalBoolean(),
+      reportCardOrMarkSheetReceived: optionalBoolean(),
       dealingStaffName: { type: String, trim: true },
       dealingStaffSignature: { type: String, trim: true },
       receivedDate: { type: Date },
@@ -188,4 +204,4 @@ const ChildSchema = new Schema(
   }
 );
 
-module.exports = mongoose.model('Child', ChildSchema);
+export default mongoose.model('Childrens', ChildSchema, 'Childrens');
