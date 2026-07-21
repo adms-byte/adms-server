@@ -131,37 +131,24 @@ app.use((req: Request, res: Response) => {
 //   // console.log(workers.map((id)=>id._id), 'workers');
 // };
 // x();
-console.log('Trying to conenct to mongodb'.yellow);
-mongoose.connect(process.env.MONGO_DB ?? 'mongodb://127.0.0.1:27017').then(async () => {
-  console.log('Connected to mongodb'.bgGreen);
-  // if (!await FormattedCode.findOne({})) {
-  //   FormattedCode.create({
-  //     _id: new Types.ObjectId(),
-  //     staffCode: 0,
-  //     workerCode: 0,
-  //     spouseCode: 0,
-  //     childCode: 0,
-  //     divCode: 0,
-  //     FRCode: 0,
-  //     IROCode: 0,
-  //     applicationCode: 0,
-  //   })
-  //     .then(() => console.log('Created FormattedCode document'.bgBlue))
-  //     .catch((error) => commonEvents.emit('error', error));
-  // }
-  // await IRO.updateOne({_id: '654a85d423e738d111636fdb'}, {status: IROLifeCycleStates.WAITING_FOR_ACCOUNTS_MNGR, sanctionedBank: 'Personal Bank'});
+console.log('Trying to connect to mongodb'.yellow);
 
-  // await User.updateMany({}, {
-  //   'supportStructure.supportEnabled': true,
-  // }).then(()=>console.log('Updated'));
-
-  // console.log('🚀 ~ file: server.ts:78 ~ mongoose.connect ~ u:', u);
-})
+// Primary connection (default) — this is what mongoose.model() uses everywhere
+mongoose.connect(process.env.MONGO_DB ?? 'mongodb://127.0.0.1:27017')
+  .then(() => console.log('Connected to primary mongodb'.bgGreen))
   .catch((error) => commonEvents.emit('error', error));
+
+// Secondary connection — separate DB, needs its own connection object
+export const extrasConnection = mongoose.createConnection(
+  process.env.MONGO_DB_EXTRAS ?? 'mongodb://127.0.0.1:27017/adms'
+);
+
+extrasConnection.on('connected', () => console.log('Connected to extras mongodb'.bgGreen));
+extrasConnection.on('error', (error) => commonEvents.emit('error', error));
+
 app
   .listen(PORT, () => console.log(`Server running: http://localhost:${PORT}`.bgGreen))
-  .on('error', (error) => commonEvents.emit('error', {data: error}));
-
+  .on('error', (error) => commonEvents.emit('error', { data: error }));
 
 // Google.Gmail.initialize(Google.Auth.getAuth()); // GoogleMail
 // Google.Drive.initialize(Google.Auth.getAuth()); // GoogleMail
