@@ -142,7 +142,7 @@ const SupporterSchema = new Schema(
       allocation: [AllocationSchema],
       allocationInput: AllocationSchema,
 
-      subscription: SubscriptionSchema,
+      subscription: [SubscriptionSchema],
     },
   },
   { timestamps: true }
