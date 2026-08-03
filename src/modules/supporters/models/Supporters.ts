@@ -1,5 +1,54 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+
+
+export interface ISubscription {
+  resourceId: string;
+  name: string;
+  language: string;
+  startDate: Date;
+  endDate: Date;
+  status: "Active" | "Inactive" | "Expired";
+}
+
+export interface IUserSubscription extends Document {
+  userId: mongoose.Types.ObjectId;
+  subscription: ISubscription[];
+}
+
+const SubscriptionSchema = new Schema<ISubscription>(
+  {
+    resourceId: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    language: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    endDate: {
+      type: Date,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["Active", "Inactive", "Expired"],
+      default: "Active",
+    },
+  },
+  { _id: false }
+);
 const NotificationPrefSchema = new Schema(
   {
     email: { type: Boolean, default: false },
@@ -8,7 +57,15 @@ const NotificationPrefSchema = new Schema(
     phoneCall: { type: Boolean, default: false },
     postalMail: { type: Boolean, default: false },
   },
-  { _id: false }
+);
+const PrayerSchemaSchema = new Schema(
+  {
+    title: { type: String, default: '' },
+    description: { type: String, default: '' },
+    category: { type: String, default: '' },
+    assignee: { type: String, default: '' },
+  
+  },
 );
 const FamilySchema = new Schema(
   {
@@ -24,7 +81,6 @@ const FamilySchema = new Schema(
       default: "spouse",
     },
   },
-  { _id: false },
 );
 const AddressSchema = new Schema(
   {
@@ -34,8 +90,7 @@ const AddressSchema = new Schema(
     pincode: { type: String, default: "" },
     state: { type: String, default: "" },
     village: { type: String, default: "" },
-  },
-  { _id: false }, // no separate _id for each address sub-doc
+  },// no separate _id for each address sub-doc
 );
 const ChildSchema = new Schema(
   {
@@ -44,22 +99,15 @@ const ChildSchema = new Schema(
     gender: { type: String },
     age: { type: String },
   },
-  { _id: false }
 );
 const ContactsSchema = new Schema(
   {
-    // dynamic keys like "address-1", "address-2", "address-3"...
-    address: {
-      type: Map,
-      of: AddressSchema,
-      default: {},
-    },
     email: { type: String, default: "" },
     phoneNo: { type: String, default: "" },
     secondaryEmail: { type: String, default: "" },
     secondaryNo: { type: String, default: "" },
   },
-  { _id: false },
+   { strict: false, _id: false }
 );
 
 const AllocationSchema = new Schema(
@@ -80,20 +128,6 @@ const AllocationSchema = new Schema(
   { _id: false }
 );
 
-const SubscriptionSchema = new Schema(
-  {
-    title: { type: String, default: "" },
-    description: { type: String, default: "" },
-    startDate: { type: Date },
-    endDate: { type: Date },
-    options: {
-      type: String,
-      enum: ["repeat", "one-time"], // adjust to match your actual dropdown values
-      default: "one-time",
-    },
-  },
-  { _id: false }
-);
 
 const SupporterSchema = new Schema(
   {
@@ -111,7 +145,6 @@ const SupporterSchema = new Schema(
     roles: [
       {
         label: { type: String },
-        _id: false,
       },
     ],
 
@@ -128,7 +161,7 @@ const SupporterSchema = new Schema(
     family: { type: [FamilySchema], default: [ ] },
 
     // transaction details — all in same document
-    transaction: {
+    transaction: [{
       sourceOfDonation: { type: String },
       amount: { type: String },
       amountCreditBank: { type: String },
@@ -142,8 +175,9 @@ const SupporterSchema = new Schema(
       allocation: [AllocationSchema],
       allocationInput: AllocationSchema,
 
-      subscription: [SubscriptionSchema],
-    },
+    }],
+    prayerRequest: [PrayerSchemaSchema],
+    subscription: [SubscriptionSchema],
   },
   { timestamps: true }
 );
