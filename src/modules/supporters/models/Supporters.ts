@@ -100,6 +100,14 @@ const ChildSchema = new Schema(
     age: { type: String },
   },
 );
+const MissionarySchema = new Schema(
+  {
+    _id: { type: String },
+    name: { type: String },
+    gender: { type: String },
+    age: { type: String },
+  },
+);
 const ContactsSchema = new Schema(
   {
     email: { type: String, default: "" },
@@ -122,6 +130,7 @@ const AllocationSchema = new Schema(
         startDate: { type: Date },
         endDate: { type: Date },
         children: [ChildSchema],
+        missionary: [MissionarySchema],
         transactionId: { type: String },
       },
   },
