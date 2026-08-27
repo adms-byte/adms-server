@@ -20,26 +20,26 @@ const SubscriptionSchema = new Schema<ISubscription>(
   {
     resourceId: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     name: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     language: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     startDate: {
       type: Date,
-      required: true,
+      required: false,
     },
     endDate: {
       type: Date,
-      required: true,
+      required: false,
     },
     status: {
       type: String,
