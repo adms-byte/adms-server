@@ -3,6 +3,8 @@ import { log } from "console";
 import { sendStandardResponse } from "../../../extras/helpers";
 import Childrens from "../models/Childrens";
 import { extrasConnection } from "../../..";
+import mongoose from 'mongoose';
+import { ObjectId } from 'mongoose';
 
 const childrensRouter = Router();
 
@@ -141,7 +143,42 @@ childrensRouter.get('/others', async (req, res) => {
  
 
 // });
+// GET /supporters?ids=64a1,64a2,64a3
+childrensRouter.get('/getChildren', async (req, res) => {
+  try {
+    const idsParam = req.query.ids as string;
+    if (!idsParam) {
+      return sendStandardResponse<any>(res, 'BAD REQUEST', {
+        data: null,
+        message: 'ids query parameter is required',
+      });
+    }
 
+const ids = idsParam.split(',').map((id) => id.trim()).filter(Boolean);
+
+const objectIds = ids
+  .filter((id) => mongoose.Types.ObjectId.isValid(id))
+  .map((id) => new mongoose.Types.ObjectId(id));
+
+const extrasChildren = await extrasConnection
+  .collection('childrens')
+  .aggregate([
+    { $match: { _id: { $in: objectIds } } },
+  ])
+  .toArray();
+
+    sendStandardResponse<any>(res, 'OK', {
+      data: extrasChildren,
+      message: 'Successfully retrieved Children',
+    });
+  } catch (err) {
+    log(err);
+    sendStandardResponse<any>(res, 'BAD REQUEST', {
+      data: null,
+      message: 'Failed to retrieve Childrens',
+    });
+  }
+});
 
 
 export default childrensRouter;

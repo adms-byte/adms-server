@@ -28,7 +28,7 @@ const SubscriptionSchema = new Schema<ISubscription>(
       required: false,
       trim: true,
     },
-    language: {
+    preferredLanguage: {
       type: String,
       required: false,
       trim: true,
@@ -144,7 +144,7 @@ const SupporterSchema = new Schema(
     title: { type: String },
     name: { type: String, required: true },
     gender: { type: String },
-    language: { type: String },
+    preferredLanguage: { type: String },
     meritalStatus: { type: String },
     nationality: { type: String },
     panNo: { type: String },
