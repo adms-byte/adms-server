@@ -322,7 +322,72 @@ supportersRouter.get('/getCounters', async (req, res) => {
   }
 });
 
+supportersRouter.get('/top-donors', async (req, res) => {
+  try {
+    const  {min = 5000, max = 10000, limit = 10 } = req.query;
 
+    const topSupporters = await Supporters.aggregate([
+      // break out each transaction into its own doc
+      { $unwind: "$transaction" },
+
+      // convert amount (string) -> number, safely
+      {
+        $addFields: {
+          "transaction.amountNum": {
+            $convert: {
+              input: "$transaction.amount",
+              to: "double",
+              onError: 0,
+              onNull: 0
+            }
+          }
+        }
+      },
+
+      // filter by amount range
+      {
+        $match: {
+          "transaction.amountNum": {
+            $gte: Number(min),
+            $lte: Number(max)
+          }
+        }
+      },
+
+      // sort transactions high -> low
+      { $sort: { "transaction.amountNum": -1 } },
+
+      // one row per supporter (their highest qualifying transaction)
+      {
+        $group: {
+          _id: "$_id",
+          supporterCode: { $first: "$supporterCode" },
+          name: { $first: "$name" },
+          gender: { $first: "$gender" },
+          contacts: { $first: "$contacts" },
+          topAmount: { $first: "$transaction.amountNum" },
+          transaction: { $first: "$transaction" }
+        }
+      },
+
+      // final ranking
+      { $sort: { topAmount: -1 } },
+      { $limit: Number(limit) }
+    ]);
+
+    // res.status(200).json({
+    //   success: true,
+    //   count: topSupporters.length,
+    //   data: topSupporters
+    // });
+     sendStandardResponse<any>(res, "OK", {
+      data: topSupporters,
+      message: "Successfully retrieved supporters",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 supportersRouter.get("/search", async (req, res) => {
   try {
