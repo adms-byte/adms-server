@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
+import CommonLifeCycleStates from "../../../extras/CommonLifeCycleStates";
 
 
 
@@ -8,7 +9,7 @@ export interface ISubscription {
   language: string;
   startDate: Date;
   endDate: Date;
-  status: "Active" | "Inactive" | "Expired";
+  // status?: CommonLifeCycleStates;
 }
 
 export interface IUserSubscription extends Document {
@@ -28,10 +29,10 @@ const SubscriptionSchema = new Schema<ISubscription>(
       required: false,
       trim: true,
     },
-    preferredLanguage: {
+    language: {
       type: String,
       required: false,
-      trim: true,
+      // trim: true,
     },
     startDate: {
       type: Date,
@@ -41,11 +42,8 @@ const SubscriptionSchema = new Schema<ISubscription>(
       type: Date,
       required: false,
     },
-    status: {
-      type: String,
-      enum: ["Active", "Inactive", "Expired"],
-      default: "Active",
-    },
+    //  status: {type: Number, required: false ,default: 100},
+
   },
   { _id: false }
 );
@@ -140,22 +138,19 @@ const AllocationSchema = new Schema(
 
 const SupporterSchema = new Schema(
   {
+    supporterCode: { type: String, require: true },
+    status: {type: Number, required: false ,default: 100},
     type: { type: String, default: "Individual" },
     title: { type: String },
     name: { type: String, required: true },
     gender: { type: String },
-    preferredLanguage: { type: String },
+    preferredLanguages: { type: String },
     meritalStatus: { type: String },
     nationality: { type: String },
     panNo: { type: String },
     passport: { type: String },
     aadhar: { type: String },
-
-    roles: [
-      {
-        label: { type: String },
-      },
-    ],
+    roles: [ {type: Number } ],
 
     // notification preferences
     // generalCommunication: NotificationPrefSchema,
