@@ -82,6 +82,43 @@ supportersRouter.get('/', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to fetch supporters', error });
   }
 });
+
+supportersRouter.get('/recentSupporters', async (req, res) => {
+  log(req.query, 'req.query');
+  try {
+    const limit = 10;
+
+    // build filter conditionally — only add roles filter if role param was sent
+    const filter: Record<string, any> = {};
+    const roleParam = req.query.roles as string | undefined;
+
+    if (roleParam) {
+      const roleValues = roleParam
+        .split(',')
+        .map((r) => parseInt(r, 10))
+        .filter((n) => !isNaN(n));
+
+      if (roleValues.length) {
+        filter.roles = { $in: roleValues }; // matches if roles array contains ANY of these
+      }
+    }
+
+    filter.status = CommonLifeCycleStates.ACTIVE; // Only fetch supporters with ACTIVE status
+
+    const supporters = await Supporters.find(filter)
+      .sort({ createdAt: -1 }) // newest first
+      .limit(limit)
+      .lean();
+
+    sendStandardResponse<any>(res, 'OK', {
+      data: supporters,
+      message: 'Successfully retrieved last 10 created supporters',
+    });
+  } catch (error) {
+    console.error('Error fetching supporters:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch supporters', error });
+  }
+});
 supportersRouter.get('/getDonorCounters', async (req, res) => {
   try {
     log(req.query, 'req.query');
