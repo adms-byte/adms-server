@@ -36,6 +36,28 @@ supportersRouter.post('/', async (req, res) => {
  
 
 });
+supportersRouter.patch('/:id', async (req, res) => {
+   log(req.body, 'req.body');
+    try {
+  const supporter = await Supporters.findByIdAndUpdate(
+    req.params.id,
+    {
+      ...req.body,
+    },
+    { new: true }
+  );
+     sendStandardResponse<any>(res, 'OK', {
+      data: supporter,
+      message: 'Successfully updated supporter',
+    });
+  } catch (err) {
+    log(err);
+  }
+    // const result = await Supporters.create(req.body);
+   
+ 
+
+});
 supportersRouter.get('/', async (req, res) => {
   log(req.query, 'req.query');
   try {
@@ -68,14 +90,66 @@ supportersRouter.get('/', async (req, res) => {
     ]);
 
     sendStandardResponse<any>(res, 'OK', {
-      data: supporters,
+      data: {
+        supporters,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          hasMore: skip + supporters.length < totalCount,
+        }
+      },
       message: 'Successfully retrieved supporters',
-      // pagination: {
-      //   page,
-      //   limit,
-      //   totalCount,
-      //   hasMore: skip + supporters.length < totalCount,
-      // },
+     
+    });
+  } catch (error) {
+    console.error('Error fetching supporters:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch supporters', error });
+  }
+});
+supportersRouter.get('/getSupporters', async (req, res) => {
+  log(req.query, 'req.query');
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 30;
+    const skip = (page - 1) * limit;
+
+    // build filter conditionally — only add roles filter if role param was sent
+    const filter: Record<string, any> = {};
+    const roleParam = req.query.roles as string | undefined;
+
+    // if (roleParam) {
+    //   const roleValues = roleParam
+    //     .split(',')
+    //     .map((r) => parseInt(r, 10))
+    //     .filter((n) => !isNaN(n));
+
+    //   if (roleValues.length) {
+    //     filter.roles = { $in: roleValues }; // matches if roles array contains ANY of these
+    //   }
+    // }
+     filter.status = CommonLifeCycleStates.ACTIVE; // Only fetch supporters with ACTIVE status
+    const [supporters, totalCount] = await Promise.all([
+      Supporters.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Supporters.countDocuments(filter), // ← same filter, so count matches the filtered set
+    ]);
+
+    sendStandardResponse<any>(res, 'OK', {
+      data: {
+        supporters,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          hasMore: skip + supporters.length < totalCount,
+        }
+      },
+      message: 'Successfully retrieved supporters',
+     
     });
   } catch (error) {
     console.error('Error fetching supporters:', error);

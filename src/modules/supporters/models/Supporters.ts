@@ -119,6 +119,7 @@ const ContactsSchema = new Schema(
 const AllocationSchema = new Schema(
   {
     mainPurposeCategory: { type: String, default: "" },
+    receiptId: { type: Number, default: 9999 },
     subcategory: { type: String, default: "" },
     tempAmount: { type: String, default: "" },
       sponsorshipAllocationInput: {
@@ -167,6 +168,9 @@ const SupporterSchema = new Schema(
     // transaction details — all in same document
     transaction: [{
       sourceOfDonation: { type: String },
+      receiptStatus: { type: String },
+      transactionCode: { type: String ,default: 'TRANS-0001'},
+      transactionId: { type: String},
       amount: { type: String },
       amountCreditBank: { type: String },
       amountDepositDate: { type: Date },
