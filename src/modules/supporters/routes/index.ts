@@ -58,6 +58,30 @@ supportersRouter.patch('/:id', async (req, res) => {
  
 
 });
+supportersRouter.patch('/newChaalan/:id', async (req, res) => {
+  log(req.body, 'req.body');
+  try {
+    const supporter = await Supporters.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: {
+          transaction: req.body.transaction,
+        },
+      },
+      { new: true }
+    );
+
+    sendStandardResponse<any>(res, 'OK', {
+      data: supporter,
+      message: 'Successfully updated supporter',
+    });
+  } catch (err) {
+    log(err);
+    sendStandardResponse<any>(res, 'BAD REQUEST', {
+      message: 'Failed to update supporter',
+    });
+  }
+});
 supportersRouter.get('/', async (req, res) => {
   log(req.query, 'req.query');
   try {
