@@ -99,11 +99,43 @@ console.log(filter, 'filter');
 childrensRouter.get('/', async (req, res) => {
    log(req.body, 'req.body');
     try {
-    const supporter = await Childrens.find();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 30;
+    const skip = (page - 1) * limit;
+     const filter: Record<string, any> = {};
+    const roleParam = req.query.roles as string | undefined;
+    if (roleParam) {
+      const roleValues = roleParam
+        .split(',')
+        .map((r) => parseInt(r, 10))
+        .filter((n) => !isNaN(n));
+
+      if (roleValues.length) {
+        filter.roles = { $in: roleValues }; // matches if roles array contains ANY of these
+      }
+    }
+    //  filter.status = CommonLifeCycleStates.ACTIVE; // Only fetch supporters with ACTIVE status
+        const [supporters, totalCount] = await Promise.all([
+          Childrens.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+          Childrens.countDocuments(filter), // ← same filter, so count matches the filtered set
+        ]);
      sendStandardResponse<any>(res, 'OK', {
-      data: supporter,
-      message: 'Successfully retrieved Childrens',
-    });
+         data: {
+           supporters,
+           pagination: {
+             page,
+             limit,
+             totalCount,
+             hasMore: skip + supporters.length < totalCount,
+           }
+         },
+         message: 'Successfully retrieved Children',
+        
+       });
   } catch (err) {
     log(err);
   }
@@ -113,20 +145,112 @@ childrensRouter.get('/', async (req, res) => {
 
 });
 childrensRouter.get('/others', async (req, res) => {
+  log(req.body, 'req.body');
+
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 30;
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, any> = {};
+
+   const [supporters, totalCount] = await Promise.all([
+  extrasConnection
+    .collection('childrens')
+    .aggregate([
+      {
+        $match: filter,
+      },
+      {
+        $lookup: {
+          from: 'divisions',
+          localField: 'division',
+          foreignField: '_id',
+          as: 'divisionData',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'childOf',
+          foreignField: '_id',
+          as: 'childOfData',
+        },
+      },
+      
+      {
+        $unwind: {
+          path: '$divisionData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $unwind: {
+          path: '$childOfData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+  $lookup: {
+    from: 'spouses',
+    localField: 'childOfData.spouse',
+    foreignField: '_id',
+    as: 'spouseData',
+  },
+},
+{
+  $unwind: {
+    path: '$spouseData',
+    preserveNullAndEmptyArrays: true,
+  },
+},
+      
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+    ])
+    .toArray(),
+
+  extrasConnection
+    .collection('childrens')
+    .countDocuments(filter),
+]);
+
+    sendStandardResponse<any>(res, 'OK', {
+      data: {
+        supporters,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          hasMore: skip + supporters.length < totalCount,
+        },
+      },
+      message: 'Successfully retrieved Children',
+    });
+  } catch (err) {
+    log(err);
+  }
+});
+
+childrensRouter.get('/:id', async (req, res) => {
    log(req.body, 'req.body');
     try {
-      const children = await extrasConnection.collection("childrens").find().limit(50).toArray();
-      console.log(children, 'children');
-      
+    const supporter = await Childrens.findById(req.params.id);
      sendStandardResponse<any>(res, 'OK', {
-      data: children,
+      data: supporter,
       message: 'Successfully retrieved Childrens',
     });
   } catch (err) {
     log(err);
   }
-
-});
+})
 // // childrensRouter.get('/:id', async (req, res) => {
 // //    log(req.body, 'req.body');
 // //     try {

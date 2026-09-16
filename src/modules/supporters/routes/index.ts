@@ -4,6 +4,7 @@ import { log } from "console";
 import { sendStandardResponse } from "../../../extras/helpers";
 import { FormattedCode } from "../../../models/FormattedCode";
 import CommonLifeCycleStates from "../../../extras/CommonLifeCycleStates";
+import { extrasConnection } from "../../..";
 
 const supportersRouter = Router();
 
@@ -160,6 +161,114 @@ supportersRouter.get('/getSupporters', async (req, res) => {
         .limit(limit)
         .lean(),
       Supporters.countDocuments(filter), // ← same filter, so count matches the filtered set
+    ]);
+
+    sendStandardResponse<any>(res, 'OK', {
+      data: {
+        supporters,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          hasMore: skip + supporters.length < totalCount,
+        }
+      },
+      message: 'Successfully retrieved supporters',
+     
+    });
+  } catch (error) {
+    console.error('Error fetching supporters:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch supporters', error });
+  }
+});
+supportersRouter.get('/getOtherSupporters', async (req, res) => {
+  log(req.query, 'req.query');
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 30;
+    const skip = (page - 1) * limit;
+
+    // build filter conditionally — only add roles filter if role param was sent
+    const filter: Record<string, any> = {};
+    const roleParam = req.query.roles as string | undefined;
+
+    // if (roleParam) {
+    //   const roleValues = roleParam
+    //     .split(',')
+    //     .map((r) => parseInt(r, 10))
+    //     .filter((n) => !isNaN(n));
+
+    //   if (roleValues.length) {
+    //     filter.roles = { $in: roleValues }; // matches if roles array contains ANY of these
+    //   }
+    // }
+     filter.status = CommonLifeCycleStates.ACTIVE; // Only fetch supporters with ACTIVE status
+    const [supporters, totalCount] = await Promise.all([
+      extrasConnection
+        .collection('users')
+         .aggregate([
+          {
+            $match: filter,
+          },
+          {
+            $lookup: {
+              from: 'divisions',
+              localField: 'division',
+              foreignField: '_id',
+              as: 'divisionData',
+            },
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'childOf',
+              foreignField: '_id',
+              as: 'childOfData',
+            },
+          },
+          
+          {
+            $unwind: {
+              path: '$divisionData',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $unwind: {
+              path: '$childOfData',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+      $lookup: {
+        from: 'spouses',
+        localField: 'childOfData.spouse',
+        foreignField: '_id',
+        as: 'spouseData',
+      },
+    },
+    {
+      $unwind: {
+        path: '$spouseData',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+          
+          {
+            $sort: { createdAt: -1 },
+          },
+          {
+            $skip: skip,
+          },
+          {
+            $limit: limit,
+          },
+        ])
+        .toArray(),
+    
+      extrasConnection
+        .collection('users')
+        .countDocuments(filter),
     ]);
 
     sendStandardResponse<any>(res, 'OK', {
