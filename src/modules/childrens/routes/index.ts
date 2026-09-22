@@ -4,7 +4,6 @@ import { sendStandardResponse } from "../../../extras/helpers";
 import Childrens from "../models/Childrens";
 import { extrasConnection } from "../../..";
 import mongoose from 'mongoose';
-import { ObjectId } from 'mongoose';
 
 const childrensRouter = Router();
 
@@ -144,6 +143,43 @@ childrensRouter.get('/', async (req, res) => {
  
 
 });
+childrensRouter.get('/getChildren', async (req, res) => {
+  try {
+    console.log(req.query, 'req.queryewe');
+    
+    const idsParam = req.query.ids as string;
+    if (!idsParam) {
+      return sendStandardResponse<any>(res, 'BAD REQUEST', {
+        data: null,
+        message: 'ids query parameter is required',
+      });
+    }
+
+const ids = idsParam.split(',').map((id) => id.trim()).filter(Boolean);
+
+const objectIds = ids
+  .filter((id) => mongoose.Types.ObjectId.isValid(id))
+  .map((id) => new mongoose.Types.ObjectId(id));
+
+const extrasChildren = await extrasConnection
+  .collection('childrens')
+  .aggregate([
+    { $match: { _id: { $in: objectIds } } },
+  ])
+  .toArray();
+
+    sendStandardResponse<any>(res, 'OK', {
+      data: extrasChildren,
+      message: 'Successfully retrieved Children',
+    });
+  } catch (err) {
+    log(err);
+    sendStandardResponse<any>(res, 'BAD REQUEST', {
+      data: null,
+      message: 'Failed to retrieve Childrens',
+    });
+  }
+});
 childrensRouter.get('/others', async (req, res) => {
   log(req.body, 'req.body');
 
@@ -251,6 +287,106 @@ childrensRouter.get('/:id', async (req, res) => {
     log(err);
   }
 })
+childrensRouter.get('/missionaryChild/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return sendStandardResponse<any>(res, 'BAD REQUEST', {
+        data: null,
+        message: 'Invalid child ID',
+      });
+    }
+
+    const childId = new mongoose.Types.ObjectId(id);
+
+    const children = await extrasConnection
+      .collection('childrens')
+      .aggregate([
+        // Find only the requested child
+        {
+          $match: {
+            _id: childId,
+          },
+        },
+
+        // Get division
+        {
+          $lookup: {
+            from: 'divisions',
+            localField: 'division',
+            foreignField: '_id',
+            as: 'divisionData',
+          },
+        },
+
+        // Get childOf user
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'childOf',
+            foreignField: '_id',
+            as: 'childOfData',
+          },
+        },
+
+        // Convert division array to object
+        {
+          $unwind: {
+            path: '$divisionData',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // Convert childOf array to object
+        {
+          $unwind: {
+            path: '$childOfData',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // Get spouse
+        {
+          $lookup: {
+            from: 'spouses',
+            localField: 'childOfData.spouse',
+            foreignField: '_id',
+            as: 'spouseData',
+          },
+        },
+
+        // Convert spouse array to object
+        {
+          $unwind: {
+            path: '$spouseData',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ])
+      .toArray();
+
+    // No child found
+    if (children.length === 0) {
+      return sendStandardResponse<any>(res, 'NOT FOUND', {
+        data: null,
+        message: 'Child not found',
+      });
+    }
+
+    return sendStandardResponse<any>(res, 'OK', {
+      data: children[0],
+      message: 'Successfully retrieved Child',
+    });
+  } catch (err) {
+    log(err, 'missionaryChild error');
+
+    return sendStandardResponse<any>(res, 'INTERNAL SERVER ERROR', {
+      data: null,
+      message: 'Failed to retrieve Child',
+    });
+  }
+});
 // // childrensRouter.get('/:id', async (req, res) => {
 // //    log(req.body, 'req.body');
 // //     try {
@@ -268,41 +404,7 @@ childrensRouter.get('/:id', async (req, res) => {
 
 // });
 // GET /supporters?ids=64a1,64a2,64a3
-childrensRouter.get('/getChildren', async (req, res) => {
-  try {
-    const idsParam = req.query.ids as string;
-    if (!idsParam) {
-      return sendStandardResponse<any>(res, 'BAD REQUEST', {
-        data: null,
-        message: 'ids query parameter is required',
-      });
-    }
 
-const ids = idsParam.split(',').map((id) => id.trim()).filter(Boolean);
-
-const objectIds = ids
-  .filter((id) => mongoose.Types.ObjectId.isValid(id))
-  .map((id) => new mongoose.Types.ObjectId(id));
-
-const extrasChildren = await extrasConnection
-  .collection('childrens')
-  .aggregate([
-    { $match: { _id: { $in: objectIds } } },
-  ])
-  .toArray();
-
-    sendStandardResponse<any>(res, 'OK', {
-      data: extrasChildren,
-      message: 'Successfully retrieved Children',
-    });
-  } catch (err) {
-    log(err);
-    sendStandardResponse<any>(res, 'BAD REQUEST', {
-      data: null,
-      message: 'Failed to retrieve Childrens',
-    });
-  }
-});
 
 
 export default childrensRouter;
