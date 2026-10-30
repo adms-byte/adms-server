@@ -83,8 +83,6 @@ const validate = (b: any, receipts: IReceipt[]): string | null => {
   for (const r of receipts) {
     if (!r.donorName) return `Receipt ${r.receiptNo}: donorName is required`;
     if (!r.rows.length) return `Receipt ${r.receiptNo}: add at least one allocation row`;
-    if (r.balanceAmount !== 0)
-      return `Receipt ${r.receiptNo}: allocated amount must equal receipt amount (balance ${r.balanceAmount})`;
   }
   return null;
 };
